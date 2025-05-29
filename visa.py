@@ -213,15 +213,15 @@ def get_available_date(dates):
         
 
     second_date = None
+    # use the second earliest date if available to avoid race conditions
     print("Checking for an earlier date:")
-    for d in dates:
+    for d in dates:   
         date = d.get('date')
         if is_earlier(date):
             if second_date:
                 return date
             second_date = date
         else:
-            print(f'This {second_date} date is returned')
             return second_date
 
 def info_logger(file_path, log):
@@ -230,7 +230,7 @@ def info_logger(file_path, log):
         file.write(str(datetime.now().time()) + ":\n" + log + "\n")
 
 
-path_to_chromedriver = './chromedriver-mac-x64/chromedriver'  
+path_to_chromedriver = './chromedriver-mac-x64_134/chromedriver'  
 driver = webdriver.Chrome(service=Service(executable_path=path_to_chromedriver))
 
 if __name__ == "__main__":
@@ -254,9 +254,8 @@ if __name__ == "__main__":
                 msg = f"List is empty, Probabely banned!\n\tSleep for {BAN_COOLDOWN_TIME.seconds/60/60} hours!\n"
                 print(msg)
                 info_logger(LOG_FILE_NAME, msg)
-                driver.get(SIGN_OUT_LINK)
-                time.sleep(BAN_COOLDOWN_TIME.seconds )
-                first_loop = True
+                # driver.get(SIGN_OUT_LINK)
+                # first_loop = True
             else:
                
                 date = get_available_date(dates)
@@ -273,24 +272,24 @@ if __name__ == "__main__":
                 info_logger(LOG_FILE_NAME, msg)
             
 
-                print(f"\n\nNo available dates before ({MY_SCHEDULE_DATE})!")
-                RETRY_WAIT_TIME = random.randint(RETRY_TIME_L_BOUND.seconds, RETRY_TIME_U_BOUND.seconds)
-                t1 = time.time()
-                total_time = t1 - t0
-                msg = "\nWorking Time:  ~ {:.2f} minutes".format(total_time/minute)
+            print(f"\n\nNo available dates before ({MY_SCHEDULE_DATE})!")
+            RETRY_WAIT_TIME = random.randint(RETRY_TIME_L_BOUND.seconds, RETRY_TIME_U_BOUND.seconds)
+            t1 = time.time()
+            total_time = t1 - t0
+            msg = "\nWorking Time:  ~ {:.2f} minutes".format(total_time/minute)
+            print(msg)
+            info_logger(LOG_FILE_NAME, msg)
+            if total_time > WORK_LIMIT_TIME.seconds:
+                # Let program rest a little
+                print("break time")
+                driver.get(SIGN_OUT_LINK)
+                time.sleep(WORK_COOLDOWN_TIME.seconds)
+                first_loop = True
+            else:
+                msg = "Retry Wait Time: "+ str(RETRY_WAIT_TIME/60)+ " minutes"
                 print(msg)
                 info_logger(LOG_FILE_NAME, msg)
-                if total_time > WORK_LIMIT_TIME.seconds:
-                    # Let program rest a little
-                    print("break time")
-                    driver.get(SIGN_OUT_LINK)
-                    time.sleep(WORK_COOLDOWN_TIME.seconds)
-                    first_loop = True
-                else:
-                    msg = "Retry Wait Time: "+ str(RETRY_WAIT_TIME/60)+ " minutes"
-                    print(msg)
-                    info_logger(LOG_FILE_NAME, msg)
-                    time.sleep(RETRY_WAIT_TIME)
+                time.sleep(RETRY_WAIT_TIME)
         except:
             # Exception Occured
             msg = f"exception OCCURED!\n"
